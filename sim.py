@@ -88,6 +88,7 @@ for p in range(1,7):
     parameters=np.load("result7_p/p={}.npy".format(str(p)))
     print(parameters)
     circ = create_qaoa(parameters,G)
+    #circ.draw('mpl').savefig("circuit.png")
     ##simulate without Error
     sim = Aer.get_backend('qasm_simulator')         #for 1024 shots
     # result = sim.run(circ,shots=100000).result()  #for 100000 shots
