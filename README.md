@@ -81,3 +81,8 @@ As we analyze Accuracy-p figure, it's easy to obtain that noise dramatically dec
 4. We simulate the quantum circuit using qiskit and use real quantum machine's error data to simulate the noise.
 5. We plot our experiment result and discuss the reason behind it.
 
+## Reference
+
+[1] Farhi, E., Goldstone, J. and Gutmann, S., 2014. A quantum approximate optimization algorithm. *arXiv preprint arXiv:1411.4028*.
+
+[2] https://github.com/Qiskit/qiskit-aer
