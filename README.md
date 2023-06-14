@@ -15,15 +15,19 @@ First we implement the QAOA utilizing unitary matrix operator in numpy form. The
 ## Numpy  Simulation and Parameter Optimization
 
 In QAOA algorithm, we have 
+
 $$
 \begin{align*}
   |\vec{\gamma}, \vec{\beta}\rangle=U(B,\beta_p)U(C,\gamma_p)...U(B,\beta_1)U(C,\gamma_1)|s\rangle 
 \end{align*}
 $$
+
 where
+
 $$
 U(C, \gamma)=e^{-i\gamma C},U(B, \beta)=e^{-i\beta B}
 $$
+
 which could be achieved by ```scipy.linalg import expm```. 
 
 In our experiment, utilizing  $e^{-i\gamma C}=V e^{-i\gamma \Lambda} V^{-1}$ will lead to ==precision disasters==. We even found that $e^{-i\gamma C}$ obtained in this method isn't an unitary matrix anymore.
@@ -45,6 +49,7 @@ We run ```optimize.py``` for ```grapy8_in.npy```,whose picture is ```graphic_n=8
 We run ```optimize.py``` for ```grapy_in.npy```,whose picture is ```graphic_n=7.png```. Its result is ploted in  ```result_7.png``` with the help of  ```draw_result.py```. We could only simulate quantum circuit with noise in n=7 utlizing qiskit, since the free IBM quantum machine has a maxium qubit of 7 and we use its noise data.
 
 The experiment result shows that $F_p$ increases as $p$ increases and 
+
 $$
 \lim_{p\rightarrow \infty}\max_{\vec{\gamma}, \vec{\beta}}{F_p(\vec{\gamma}, \vec{\beta})}=C_{max}(z)
 $$
@@ -57,9 +62,11 @@ We prepare our qubit with an Hadamard Gate to obtain the mixed state. $U(C, \gam
 To run the ```sim.py```,you need to replace ```My_token``` with your IBM Quantum account token and change ``` provider.get_backend('ibm_nairobi')``` to the name of an 7 qubits quantum machine in your account.
 
 We obtain our result both with and without noise with the help of 'qasm_simulator'. We draw the top 5 states of each situation in the same histogram for p in range(1,7) . The result is in ```figure/```. We try the original 1024 shots and the large enough 100000 shots, which we aim to observe the real quantum computation result and the expectation of the final states individually. At the same time,we plot the Accuracy-p figure with and without noise, to help us better understand the influence of noise. 
+
 $$
 Accuracy=\frac{number\: of\: desired\: states}{total \: shot \: number}
 $$
+
 Besides, in the experiment we attempt to construct the $R_z$ error ourself, which turn out to be another precision disasters. As show in the ```failure.jpg```, we set the possibility of error to zero, but we still obtain an undesired gate result.(It's P(1) is obviously not zero and its P(3) is not 1.) We failed to fix this precision bug. That's why we turn to actual quantum machine noise data.
 
 As we analyze the histogram pictures in figure folder, we will find that for shots=100000, the accuracy states could always be distinguished,though hard, while for shots=1024,they could be figured out at p=2 and 3. It's due to the random nature of quantum measurement. As long as the expectation two states are close, they will mix up easily.
