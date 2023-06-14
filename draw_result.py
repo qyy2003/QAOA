@@ -35,5 +35,5 @@ ax2.legend(loc=2)
 ax2.set_xlim([0.5,10.5]);
 ax2.set_ylabel('Accuracy(%)');
 ax2.set_xlabel('p');
-fig.savefig("result_8.png")
+fig.savefig("result_7.png")
 plt.show()
