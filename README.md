@@ -64,7 +64,7 @@ To run the ```sim.py```,you need to replace ```My_token``` with your IBM Quantum
 We obtain our result both with and without noise with the help of 'qasm_simulator'. We draw the top 5 states of each situation in the same histogram for p in range(1,7) . The result is in ```figure/```. We try the original 1024 shots and the large enough 100000 shots, which we aim to observe the real quantum computation result and the expectation of the final states individually. At the same time,we plot the Accuracy-p figure with and without noise, to help us better understand the influence of noise. 
 
 $$
-Accuracy=\frac{number\: of\: desired\: states}{total \: shot \: number}
+Accuracy=\frac{number\quad of\quad desired\quad states}{total \quad shot \quad number}
 $$
 
 Besides, in the experiment we attempt to construct the $R_z$ error ourself, which turn out to be another precision disasters. As show in the ```failure.jpg```, we set the possibility of error to zero, but we still obtain an undesired gate result.(It's P(1) is obviously not zero and its P(3) is not 1.) We failed to fix this precision bug. That's why we turn to actual quantum machine noise data.
