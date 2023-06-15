@@ -44,7 +44,13 @@ It turns out that basinhopping and L-BFGS-B have done a faster and better job.
 
 In ```optimize.py```, We want to find out how $F_p$ changes as $p$ increases in a fixed graph. So we iterate p in range(1,11)  and utilize basinhopping algorithm in L-BFGS-B method to optimize the $F_p$  for each p. It print the result of each p and save the $|\vec{\gamma},\vec{\beta}\rangle$  in ```result7_p/p=pi.npy```.
 
-We run ```optimize.py``` for ```grapy8_in.npy```,whose picture is ```graphic_n=8.png```. Its result is ploted in  ```result_8.png``` with the help of  ```draw_result.py```.
+We run ```optimize.py``` for ```grapy8_in.npy```,whose picture is ```graphic_n=8.png```. Its result is ploted in  ```result_8.png``` with the help of  ```draw_result.py```. And the formulation of accuracy is  shown bellow.
+
+
+$$
+Accuracy=\frac{F_p(\vec{\gamma}, \vec{\beta})}{Answer \quad of \quad Classical\quad  Algorithm }
+$$
+
 
 We run ```optimize.py``` for ```grapy_in.npy```,whose picture is ```graphic_n=7.png```. Its result is ploted in  ```result_7.png``` with the help of  ```draw_result.py```. We could only simulate quantum circuit with noise in n=7 utlizing qiskit, since the free IBM quantum machine has a maxium qubit of 7 and we use its noise data.
 
@@ -59,7 +65,9 @@ $$
 
 We prepare our qubit with an Hadamard Gate to obtain the mixed state. $U(C, \gamma)=e^{-i\gamma C}$ could be achieved by applying a $Rz(-\gamma)$ and two $cx$ gate at  both ends of it.  $U(B, \beta)=e^{-i\beta B}$ could be simply implemented deploying $R_x(2\beta)$ gate. In this way, we succeed in constructing the quantum circuit. ```circuit.png``` is a quantum circuit example at n=7,p=2.
 
-To run the ```sim.py```,you need to replace ```My_token``` with your IBM Quantum account token and change ``` provider.get_backend('ibm_nairobi')``` to the name of an 7 qubits quantum machine in your account.
+To run the ```sim.py```,you need to replace ```My_token``` with your IBM Quantum account token and change ``` provider.get_backend('ibm_nairobi')``` to the name of an 7 qubits quantum machine in your account. 
+
+The datasheet of ibm_nairobi,the real quantum machine we simulate, is shown in ```overview of ibm_nairobi.png```
 
 We obtain our result both with and without noise with the help of 'qasm_simulator'. We draw the top 5 states of each situation in the same histogram for p in range(1,7) . The result is in ```figure/```. We try the original 1024 shots and the large enough 100000 shots, which we aim to observe the real quantum computation result and the expectation of the final states individually. At the same time,we plot the Accuracy-p figure with and without noise, to help us better understand the influence of noise. 
 
@@ -86,3 +94,5 @@ As we analyze Accuracy-p figure, it's easy to obtain that noise dramatically dec
 [1] Farhi, E., Goldstone, J. and Gutmann, S., 2014. A quantum approximate optimization algorithm. *arXiv preprint arXiv:1411.4028*.
 
 [2] https://github.com/Qiskit/qiskit-aer
+
+[3] https://github.com/hyperopt/hyperopt/wiki/FMin

@@ -10,18 +10,22 @@ ax1.plot(x, y,'r',marker='v');
 ax1.legend(loc=1)
 ax1.set_ylabel('Fp');
 ax1.set_xlabel('p');
+for a,b in zip(x,y):
+	ax1.text(a, b-0.05, '%.2f' % b, ha='center', va= 'top',fontsize=7)
 ax2 = ax1.twinx() 
 ax2.plot(x, y_, 'r',marker='v')
 ax2.legend(loc=2)
 ax2.set_xlim([0.5,10.5]);
 ax2.set_ylabel('Accuracy(%)');
 ax2.set_xlabel('p');
+for a,b in zip(x,y_):
+	ax2.text(a, b+0.05, '%.2f' % b, ha='center', va= 'bottom',fontsize=7)
 fig.savefig("result_8.png")
 plt.show()
 
-x = np.arange(1, 10, 1)
+x = np.arange(1, 11, 1)
 y=np.array([8.216762096456371,9.46889724562776,10.220378340618783,10.631847440104444,10.812714448698967,
-            10.8865571094276,10.93978929290213,10.939841111491877,10.9729959784368])
+            10.8865571094276,10.93978929290213,10.939841111491877,10.9729959784368,10.984984862858541])
 y_=y/11*100
 fig = plt.figure()
 ax1 = fig.add_subplot(111)
@@ -30,10 +34,14 @@ ax1.legend(loc=1)
 ax1.set_ylabel('Fp');
 ax1.set_xlabel('p');
 ax2 = ax1.twinx() 
+for a,b in zip(x,y):
+	ax1.text(a, b-0.05, '%.2f' % b, ha='center', va= 'top',fontsize=7)
 ax2.plot(x, y_, 'r',marker='v')
 ax2.legend(loc=2)
 ax2.set_xlim([0.5,10.5]);
 ax2.set_ylabel('Accuracy(%)');
 ax2.set_xlabel('p');
+for a,b in zip(x,y_):
+	ax2.text(a, b+0.05, '%.2f' % b, ha='center', va= 'bottom',fontsize=7)
 fig.savefig("result_7.png")
 plt.show()
