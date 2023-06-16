@@ -1,16 +1,16 @@
 \section{Experiment Design}
 In this section we focus on how we design our experiment, implement it with our code, along with our code structure and some fixed bugs.
 
-We fucus on the optimization and simulation of QAOA algorithm and its implementation on the Max-Cut problem in Python. First we implement the QAOA utilizing unitary matrix operator in numpy form. Then we use grid search, Bayesian Optimization and L-BFGS-B to find the best $\beta,\gamma$. With the best  $\beta,\gamma$,we construct its quantum circuits and simulate them both with and without noise using IBM qiskit SDK\cite{Qiskit}. 
+We focus on the optimization and simulation of the QAOA algorithm and its implementation on the Max-Cut problem in Python. First, we implement the QAOA utilizing the unitary matrix operator in numpy form. Then we use grid search, Bayesian Optimization and L-BFGS-B to find the best $\beta,\gamma$. With the best  $\beta,\gamma$, we construct its quantum circuits and simulate them both with and without noise using IBM qiskit SDK\cite{Qiskit}. 
 
 \subsection{Data Preparation}
 \begin{itemize}
-    \item \textbf{graphic\_in.py}: To prepare a random graph with n nodes and get the Max-Cut classic result of it, where \textbf{generateGraph()}  could new a graph and \textbf{graphic(n,edge.ask\_min())} provides its Max-Cut answer as well as division scheme in hexadecimal. The graph will be save into \textbf{grapy\_in.npy}. 
+    \item \textbf{graphic\_in.py}: To prepare a random graph with n nodes and get the Max-Cut classic result of it, where \textbf{generateGraph()}  could new a graph and \textbf{graphic(n, edge.ask\_min())} provides its Max-Cut answer as well as division scheme in hexadecimal. The graph will be saved into \textbf{grapy\_in.npy}. 
     \item \textbf{graphic\_print.py}: draw the graph using networkx SDK.
 \end{itemize}
 
 \subsection{Unitary Matrix Operator Simulation}
-In QAOA algorithm, we have 
+In the QAOA algorithm, we have 
 \begin{align*}
     |\vec{\gamma}, \vec{\beta}\rangle=U(B,\beta_p)U(C,\gamma_p)...U(B,\beta_1)U(C,\gamma_1)|s\rangle 
 \end{align*}
@@ -18,7 +18,7 @@ where
 \begin{align*}
     U(C, \gamma)=e^{-i\gamma C},U(B, \beta)=e^{-i\beta B}
 \end{align*}
-which could be achieved by our python code. There are two methods,eigenvalue decomposition and \textbf{np.linalg.eigh} implemention.Eigenvalue decomposition are faster while \textbf{np.linalg.eigh} implemention get better results.
+which could be achieved by our Python code. There are two methods, eigenvalue decomposition and \textbf{np.linalg.eigh} implementation.Eigenvalue decomposition is faster while \textbf{np.linalg.eigh} implementation get better results.
 
 
 \subsubsection{Eigenvalue Decomposition}
@@ -38,32 +38,32 @@ Since $U^\dagger U = I$, $(UDU^\dagger)^n = UD^nU^\dagger$. Therefore, we can wr
     &= Ue^{-i\gamma D}U^\dagger
 \end{align*}
 
-Therefore, by performing eigenvalue decomposition on $C$, we can transform the calculation of matrix exponential function into direct calculation of diagonal elements. In this way, we can avoid the error of matrix exponential function. However, the precision of eigenvalue decomposition obtained by \textbf{np.linalg.eig} cannot meet the requirements. Its error is so significant that the result of $e^{-i\gamma C}$ is no longer an unitary matrix any more. By multipling these so-called unitary matrix, the magnitude of the final state $|\vec{\gamma}, \vec{\beta}\rangle $ is far away from 1. It's the first \textbf{precision disasters} we have met. When we use tried different $\vec{\gamma}, \vec{\beta} $ in optimization section to get best parameters, sometimes we got dramatical results like $F_p$ larger than 10000.  To solve the problem, we finally discover this precision bug.  So we used \textbf{np.linalg.eigh} for eigenvalue decomposition to achieve the better precision. 
+Therefore, by performing eigenvalue decomposition on $C$, we can transform the calculation of the matrix exponential function into a direct calculation of diagonal elements. In this way, we can avoid the error of the matrix exponential function. However, the precision of eigenvalue decomposition obtained by \textbf{np.linalg.eig} cannot meet the requirements. Its error is so significant that the result of $e^{-i\gamma C}$ is no longer a unitary matrix anymore. By multiplying these so-called unitary matrices, the magnitude of the final state $|\vec{\gamma}, \vec{\beta}\rangle $ is far away from 1. It's the first \textbf{precision disasters} we have met. When we use tried different $\vec{\gamma}, \vec{\beta} $ in the optimization section to get the best parameters, sometimes we got dramatical results like $F_p$ larger than 10000.  To solve the problem, we finally discover this precision bug.  So we used \textbf{np.linalg.eigh} for eigenvalue decomposition to achieve better precision. 
 
 
 
 
 \subsubsection{Expm Direct Calculation}
-Since the method of eigenvalue decomposition doesn't work, we are forces to seek other solutions,which leads us to \textbf{scipy.linalg.expm}. We analyse its result, which turn out to be a nice one. We find $e^{-i\gamma C}$ is an unitary matrix and the magnitude of the final state $|\vec{\gamma}, \vec{\beta}\rangle $ is about 0.9999, which is a satisfactory result. So we choose the new method and solve the first \textbf{precision disasters}.
+Since the method of eigenvalue decomposition doesn't work, we are forced to seek other solutions, which leads us to \textbf{scipy.linalg.expm}. We analyze its result, which turns out to be a nice one. We find $e^{-i\gamma C}$ is a unitary matrix and the magnitude of the final state $|\vec{\gamma}, \vec{\beta}\rangle $ is about 0.9999, which is a satisfactory result. So we choose the new method and solve the first \textbf{precision disasters}.
 
 \subsection{Parameter Optimization}
 
-Now, given an array of $|\vec{\gamma}, \vec{\beta}\rangle$, We could simulate the QAOA. So we try to find the best array of $|\vec{\gamma}, \vec{\beta}\rangle$ at fixed $p$. That's exactly what we do in \textbf{optimize.ipynb}, finding best array of $|\vec{\gamma}, \vec{\beta}\rangle$ at fixed $p$ and n with various methods.
+Now, given an array of $|\vec{\gamma}, \vec{\beta}\rangle$, We could simulate the QAOA. So we try to find the best array of $|\vec{\gamma}, \vec{\beta}\rangle$ at fixed $p$. That's exactly what we do in \textbf{optimize.ipynb}, finding the best array of $|\vec{\gamma}, \vec{\beta}\rangle$ at fixed $p$ and n with various methods.
 
-We use dfs to achieve the grid search, hyperopt package\cite{bergstra2013making} to finish Bayesian Optimization and scipy. optimize to implement basinhopping algorithm in L-BFGS-B method. We compare these three algorithm using its $F_p$. 
+We use dfs to achieve the grid search, hyperopt package\cite{bergstra2013making} to finish Bayesian Optimization and scipy. optimize to implement the basin-hopping algorithm in the L-BFGS-B method. We compare these three algorithms using its $F_p$. 
 \begin{align*}
     F_p(\vec{\gamma}, \vec{\beta}) = \langle\vec{\gamma},\vec{\beta}| C |\vec{\gamma},\vec{\beta}\rangle
 \end{align*}
 
-According to our test result shown as TABLE.\ref{tab:Opt}, it turns out that basinhopping and L-BFGS-B have done a faster and better job. 
+According to our test result shown as TABLE.\ref{tab:Opt}, it turns out that basin-hopping and L-BFGS-B have done a faster and better job. 
 
-We want to find out how $F_p$ changes as $p$ increases in two fixed graphs shown as FIG.\ref{fig:n=7} and FIG.\ref{fig:n=8}. So we iterate $p$ in $range(1,11)$  and utilize basinhopping algorithm in L-BFGS-B method to optimize the $F_p$  for each $p$. Then we get the result of each $p$ and save the $\vec{\gamma},\vec{\beta}$. And the formulation of accuracy we use here is 
+We want to find out how $F_p$ changes as $p$ increases in two fixed graphs shown as FIG.\ref{fig:n=7} and FIG.\ref{fig:n=8}. So we iterate $p$ in $range(1,11)$  and utilize the basin-hopping algorithm in the L-BFGS-B method to optimize the $F_p$  for each $p$. Then we get the result of each $p$ and save the $\vec{\gamma},\vec{\beta}$. And the formulation of accuracy we use here is 
 \begin{align*}
     \text{Accuracy}=\frac{F_p(\vec{\gamma}, \vec{\beta})}{\text{Answer of classical Algorithm}}
 \end{align*}
 
 
-We tried to run as large n as possible. However, as n increase 1,the unitary matrix times 4 and it will take more attempts in parameter fine-tuning process.At last we chose n=8 and generate a graph as shown in FIG.\ref{fig:n=8}. We run on Lab's \textit{Intel(R) Xeon(R) Gold 6226R CPU @ 2.90GHz} and it takes us several days to get the final result.
+We tried to run as large n as possible. However, as n increases 1, the unitary matrix times 4 and it will take more attempts in the parameter fine-tuning process. At last, we chose n=8 and generate a graph as shown in FIG.\ref{fig:n=8}. We run on Lab's \textit{Intel(R) Xeon(R) Gold 6226R CPU @ 2.90GHz} and it takes us several days to get the final result.
 
 \begin{figure}[!htb]
     \centering
@@ -72,7 +72,7 @@ We tried to run as large n as possible. However, as n increase 1,the unitary mat
     \label{fig:n=8}
 \end{figure}
 
-However,when we attempt simulate the quantum circuit, we find out that we could only simulate quantum circuit with noise in n=7 utlizing qiskit, since the free IBM quantum machine has a maxium qubit of 7 and we use its noise data.Since quantum circuit simulation needs the optimized $\vec{\gamma},\vec{\beta}$,we generate a new graph, shown as FIG.\ref{fig:n=7}, and repeat the above process.
+However, when we attempt to simulate the quantum circuit, we find out that we could only simulate a quantum circuit with noise in n=7 utilizing qiskit since the free IBM quantum machine has a maximum qubit of 7 and we use its noise data. Since quantum circuit simulation needs the optimized $\vec{\gamma},\vec{\beta}$, we generate a new graph, shown as FIG.\ref{fig:n=7}, and repeat the above process.
 
 \begin{figure}[!htb]
     \centering
@@ -85,19 +85,19 @@ However,when we attempt simulate the quantum circuit, we find out that we could 
 
 \subsection{Quantum Circuits Simulation}
 
-We prepare our qubits with an Hadamard Gate to obtain the mixed state. $U(C, \gamma)=e^{-i\gamma C}$ could be achieved by applying a $Rz(-\gamma)$ and two $C_x$ gate at  both ends of it.  $U(B, \beta)=e^{-i\beta B}$ could be simply implemented deploying $R_x(2\beta)$ gate. In this way, we succeed in constructing the quantum circuit. Our code could be run on quantum machines,but the long waiting list prevent us. The typical quantum circuit our code generated is shown as FIG.\ref{fig:expamle circuit}. The datasheet of ibm nairobi,the real quantum machine we simulate, is shown in FIG.\ref{fig:overview of ibm_nairobi}.
+We prepare our qubits with a Hadamard Gate to obtain the mixed state. $U(C, \gamma)=e^{-i\gamma C}$ could be achieved by applying a $Rz(-\gamma)$ and two $C_x$ gate at  both ends of it.  $U(B, \beta)=e^{-i\beta B}$ could be simply implemented deploying $R_x(2\beta)$ gate. In this way, we succeed in constructing the quantum circuit. Our code could be run on quantum machines, but the long waiting list prevents us. The typical quantum circuit our code generated is shown as FIG.\ref{fig:example circuit}. The datasheet of IBM nairobi, the real quantum machine we simulate, is shown in FIG.\ref{fig:overview of ibm_nairobi}.
 
 \begin{figure}[!htb]
     \centering
     \includegraphics[width=0.3\textwidth]{circuit.png}
     \caption{A quantum circuit example at n=7,p=2.}
-    \label{fig:expamle circuit}
+    \label{fig:example circuit}
 \end{figure}
 
 \begin{figure}[!htb]
     \centering
     \includegraphics[width=0.42\textwidth]{overview of ibm_nairobi.png}
-    \caption{Overview of ibm nairobi}
+    \caption{Overview of IBM nairobi}
     \label{fig:overview of ibm_nairobi}
 \end{figure}
 
@@ -113,15 +113,15 @@ We obtain our result both with and without noise with the help of \textbf{qasm\_
     \text{Accuracy}=\frac{\text{number of desired states}}{\text{total shot number}}
 \end{align*}
 
-Besides, in the experiment we attempt to construct the $R_z$ error ourself, which turn out to be another precision disasters. As show in the FIG.\ref{fig:failure}, we set the possibility of error to zero, but we still obtain an undesired gate result.(It's $P(1)$ is obviously not zero and its $P(3)$ is not 1.) We failed to fix this precision bug. That's why we turn to actual quantum machine noise data.
+Besides, in the experiment, we attempt to construct the $R_z$ error ourselves, which turns out to be another \textbf{precision disaster}. As shown in the FIG.\ref{fig:failure}, we set the possibility of error to zero, but we still obtain an undesired gate result.It's $P(1)$ is obviously not 0 and its $P(3)$ is not 1. We failed to fix this precision bug. That's why we turn to actual quantum machine noise data.
 
 
 
 
 \subsection{Experiment Design summary}
 \begin{enumerate}
-    \item We implement QAOA on Max-Cut using  unitary matrix operator.
-    \item We tried three different ways of parameters optimization and test them with various n and p to find out the pros and cons.
+    \item We implement QAOA on Max-Cut using  a unitary matrix operator.
+    \item We tried three different ways of parameter optimization and test them with various n and p to find out the pros and cons.
     \item We construct the quantum circuit of QAOA.
     \item We simulate the quantum circuit using qiskit and use real quantum machine's error data to simulate the noise.
     \item We plot our experiment result and discuss the reason behind it.
@@ -131,9 +131,9 @@ Besides, in the experiment we attempt to construct the $R_z$ error ourself, whic
 
 \subsection{Comparison of different optimizor}
 
-TABLE.\ref{tab:Opt} compares the performances of different optimizer on data with different attributes. It is shown that when $p=1, 2$, the result of brute force is relatively not bad. However, as $p$ increases, the brute force algorithm takes too long to execute and the Bayes algorithm meets difficulty in accuracy. BFGS algoririthm remains the most stable one.
+TABLE.\ref{tab:Opt} compares the performances of different optimizers on data with different attributes. It is shown that when $p=1, 2$, the result of brute force is relatively not bad. However, as $p$ increases, the brute force algorithm takes too long to execute and the Bayes algorithm meets difficulty in accuracy. BFGS algorithm remains the most stable one.
 
-The result also shows that the accuracy grow significantly with $p$ when $p$ is not so large.
+The result also shows that the accuracy grows significantly with $p$ when $p$ is not so large.
 
 \begin{table}[htbp]
   \centering
@@ -169,9 +169,9 @@ We are interested in how the $F_p$ of a certain graph develops as p grows.
     \label{fig:result_8}
 \end{figure}
 
-First,we run our algorithm at n=8,shown as FIG.\ref{fig:n=8} and we got the result as FIG.\ref{fig:n=8}. For p larger than 6,we achieve an accuracy of 97\%,which is really impressive. Some fluctuation occurs when p is large. It's because our optimization algorithm may have stuck in the local minima sometimes. 
+First, we run our algorithm at n=8, shown as FIG.\ref{fig:n=8} and we got the result as FIG.\ref{fig:n=8}. For p larger than 6, we achieve an accuracy of 97\%, which is impressive. Some fluctuation occurs when p is large. It's because our optimization algorithm may have stuck in the local minima sometimes. 
 
-Then,we run our algorithm at n=7,shown as FIG.\ref{fig:n=7} and we got the result as FIG.\ref{fig:n=7}. We even achieve an accuracy of 99.86\%! Since n is smaller, we got a smooth monotonically increasing curve this time.
+Then, we run our algorithm at n=7, shown as FIG.\ref{fig:n=7} and we got the result as FIG.\ref{fig:n=7}. We even achieve an accuracy of 99.86\%! Since n is smaller, we got a smooth monotonically increasing curve this time.
 \begin{figure}[!htb]
     \centering
         \includegraphics[width=0.4\textwidth]{pic/result_7.png}
@@ -180,7 +180,7 @@ Then,we run our algorithm at n=7,shown as FIG.\ref{fig:n=7} and we got the resul
 \end{figure}
 
 
-Besides, it's worth mention that since p refer to the time our edges could expand to its neighbors, the longest path in the solution graph at $p$ is $2p+1$\cite{farhi2014quantum}, which means final solution may be unachievable for small p in theroy. 
+Besides, it's worth mentioning that since p refers to the time our edges could expand to its neighbors, the longest path in the solution graph at $p$ is $2p+1$\cite{farhi2014quantum}, which means the final solution may be unachievable for small p in theory. 
 
 In conclusion, the experiment result shows that $F_p$ increases as $p$ increases and 
 \begin{align*}
@@ -233,7 +233,7 @@ The top-5 quantum circuit's result states histogram pictures are shown in FIG.\r
         \subfloat[$P=6$]{
             \includegraphics[width=0.3\textwidth]{result/[shots=1024]P=6}
         }
-        \caption{Output tates statistics for different p at 1024 shots}
+        \caption{Output states statistics for different p at 1024 shots}
         \label{fig:1024-shots}
     \end{minipage}
 
@@ -258,20 +258,20 @@ The top-5 quantum circuit's result states histogram pictures are shown in FIG.\r
         \subfloat[$P=6$]{
             \includegraphics[width=0.3\textwidth]{result/P=6}
         }
-        \caption{Output tates statistics for different p at 100000 shots}
+        \caption{Output states statistics for different p at 100000 shots}
         \label{fig:100000-shots}
     \end{minipage}
 \end{figure*}
 \clearpage
-We will find that for shots=100000 in FIG.\ref{fig:Accuracy-P}, the accuracy states could always be distinguished,though hard. So the noise only decrease the possibility of our desired states  and randomly attribute them with others states. Since the same process act on every states, the possibility of our desired states are still ahead of others,though the gap is getting smaller as the depth of the quantum circuit increase.
+We will find that for shots=100000 in FIG.\ref{fig:Accuracy-P}, the accuracy states could always be distinguished, though hard. So the noise only decreases the possibility of our desired states  and randomly attributes them with other states. Since the same process act on every state, the possibility of our desired states is still ahead of others, though the gap is getting smaller as the depth of the quantum circuit increase.
 
-However,for shots=1024,they could only be figured out at $p=2$ and 3. It's due to the random nature of quantum measurement. As long as the expectation two states are close, they will mix up easily. So in practical, we must control the depth of the quantum circuit since the random nature of quantum measurement may bridge the gap between our desired states and others.
+However, for shots=1024, they could only be figured out at $p=2$ and 3. It's due to the random nature of quantum measurement. As long as the expectation two states are close, they will mix up easily. So in practice, we must control the depth of the quantum circuit since the random nature of quantum measurement may bridge the gap between our desired states and others.
 
-As we analyze Accuracy-p figure in FIG.\ref{fig:1024-shots} and  FIG.\ref{fig:100000-shots}, it's easy to obtain that noise dramatically decrease the accuracy. As $p$ increases, the depth of quantum circuit increases,leading to more noise and less accuracy. 
+As we analyze the Accuracy-p figure in FIG.\ref{fig:1024-shots} and  FIG.\ref{fig:100000-shots}, it's easy to obtain that noise dramatically decreases the accuracy. As $p$ increases, the depth of the quantum circuit increases, leading to more noise and less accuracy. 
 
-Besides, although  accuracy increase with $p$ for noiseless situation just as it's theoretically proved , the noise effect will over weigh the accuracy improvement of $p$ and become dominate for sufficient large $p$ (in this case $p=2$). That's why accuracy first increase then decrease as $p$ increases.
+Besides, although  accuracy increases with $p$ for noiseless situations just as it's theoretically proved, the noise effect will overweigh the accuracy improvement of $p$ and become dominant for a sufficiently large $p$ (in this case $p=2$). That's why accuracy first increases and then decreases as $p$ increases.
 
-So we should carefully choose our p when we deploy QAOA in real quantum machine.
+So we should carefully choose our p when we deploy QAOA in the real quantum machine.
 
 
 
