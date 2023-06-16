@@ -2,7 +2,7 @@
 
 Group Eve: Yuyang Qin,Tingxu Ren,Ke Chen
 
-In this project, we fucus on the optimization and simulation of QAOA algorithm and its implementation on the Max-Cut problem in Python.
+In this project, we focus on the optimization and simulation of QAOA algorithm and its implementation on the Max-Cut problem in Python. And our [paper](./Quantum_Approximate_Optimization_Algorithm_QAOA.pdf) is here.
 
 First we implement the QAOA utilizing unitary matrix operator in numpy form. Then we use grid search, Bayesian Optimization and L-BFGS-B to find the best $\beta,\gamma$. With the best  $\beta,\gamma$, we construct its quantum circuits and simulate them both with and without noise using IBM qiskit SDK. 
 
