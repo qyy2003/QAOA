@@ -1,0 +1,323 @@
+%!TEX encoding=UTF-8
+%!TEX program=xelatex
+\documentclass{./source/Report}
+
+\newtheorem{problem}{Problem}
+\newtheorem{definition}{Definition}
+
+\begin{document}
+
+\title{Quantum Approximate Optimization Algorithm(QAOA)}
+
+\author{Qin Yuyang, Ren Tingxu, Chen Ke, Lai Pengyi}
+\affiliation{CKC  College  Zhejiang  University，Hangzhou  310058}
+
+\date{\today}
+
+\begin{abstract}
+Quantum Approximate Optimization Algorithm is a hybrid quantum-classical algorithm for solving combinatorial optimization problems. The depth $p$ and the chosen of parameters can greatly influence the algorithm's performance. Based on related papers, we implement unitary matrix operator simulation, deploy three methods to optimizate $\vec{\gamma}, \vec{\beta}$ and compare their performance. Then we contruct the quantum circuits and use qiskit SDK to simulate them. Besides,we test  our quantum circuits performence under real IBM Quantum Machines noise. Lastly,We study the influence of $p$ on QAOA for an given graph and abundant results are analysed. Our codes are available at  \href{https://github.com/qyy2003/QAOA}{github}
+\end{abstract}
+
+\maketitle
+
+\section{Background}
+\subsection{Combinatorial Optimization Problem}
+Given $n$ bits and $m$ clauses, the combinatorial optimization problem asks for a string $z=z_1z_2...z_n$ that maximize the cost function 
+\begin{equation}
+  C(z) = \sum_{\alpha=1}^mC_{\alpha}(z)
+\end{equation}
+where $C_{\alpha}=1$ if $z$ satisfies clause $\alpha$ and $0$ if it doesn't satisfies.
+Usually, finding the optimization solutions is hard and costy using classical algorithms, but it is relatively 
+easier to achieve an approximate solution which is close to the maximum of $C(z)$. This kind of methods are called 
+approximate optimization algorithm.  The performance an approximate optimization algorithms is guaranteed by an approximate ratio $R$
+such that 
+\begin{equation}
+    \frac{C(z)}{\max_{z}C(z)}\ge R
+\end{equation}
+
+\subsection{Maximum Cut}
+
+\begin{problem}[Maximum Cut (MaxCut)]
+Given a graph $G =(V, E)$ with $n$ vertices and $m$ weighted edges, separate 
+$V$ into two disjoint sets $S$ and $T$ to maximize the sum of weights of edges $(u, v)$ 
+such that $u\in S, v\in T$ or $v\in S, u\in T$.
+\end{problem}
+
+The MaxCut problem is a well-know combinatorial optimization 
+problems. The problem is NP-hard and APX-hard, meaning that no polynomial-time 
+algorithm has been found and the approximate ratio obtained by polynomial-time algorithms
+cannot be arbitrarily close to the optimal solution unless $NP=P$. 
+
+The quantum computer works dnder the $2^n$ dimensional Hilbert space. To solve the combinatorial optimization problem, 
+it is expected to construct a hamiltonian (phase hamiltonian) $C$ such that
+\begin{equation}
+    C\ket{z}=C(z)\ket{z}
+    \label{eq:parallelism}
+\end{equation}
+where $\ket{z}$ is a base in computational basis. In this way, the problem of finding maximum of $C(z)$ changes into finding the 
+extremal eigenvalue for the phase hamiltonian.
+
+\begin{definition}[Phase Hamiltonian]
+The phase hamiltonian for MaxCut problem is constructed as
+\begin{equation}
+    C=\sum_{\langle jk\rangle}\frac{w_{jk}}{2}(1-\sigma_j^z\sigma_k^z)
+\end{equation}
+where $w_{jk}$ is the weight of edge $\langle jk \rangle$.
+\end{definition}
+To see how this construction works, let's take the $2^2$ dimensinal Hilbert space as an example.
+If there is an edge between the two vertices, then 
+\begin{equation}
+    \sigma_0^z\sigma_1^z = 
+    \left( \begin{matrix}
+        1 & 0 & 0 & 0 \\ 0 & -1 & 0 & 0 \\ 0 & 0 & -1 & 0 \\ 0 & 0 & 0 & 1
+    \end{matrix} \right)
+\end{equation}
+\begin{equation}
+    C = \frac{w}{2}(1-\sigma_0^z\sigma_1^z)=
+    \left( \begin{matrix}
+        0 & 0 & 0 & 0 \\ 0 & w & 0 & 0 \\ 0 & 0 & w & 0 \\ 0 & 0 & 0 & 0
+    \end{matrix} \right)
+\end{equation}
+
+This means that the result of $C\vert z\rangle$ is equal to $w$ if and only if the two vertices 
+are in different sets, i.e., $\vert z \rangle = \vert 01\rangle$ or $\vert z \rangle =\vert 10\rangle$. Take the sum over all 
+edges, we can prove that this construction satisfies Equation~\ref{eq:parallelism}.
+
+\subsection{QAA: Quantum Adiabatic Algorithm}
+
+Quantum Adiabatic Algorithm is a method raised around 2000 to solve combinatorial search problems~\cite{farhi2000quantum}. The algorithm 
+begins with an initial state $|s\rangle$ which is the groudn state of $B$. Then it construct a time dependent Hamiltonian
+\begin{equation}
+    H(t)=(1-\frac{t}{T})B+\frac{t}{T}C 
+\end{equation} 
+
+Let the system envolves according to the Schrödinger equation for a sufficient long time $T$. The system is expected to 
+stay in the ground state over the smooth envolution. In the end, the ground state of $H(T) = C$ can be obtained.
+
+However, in practical situations, the long envolution time can be intolerable. 
+In addition, the energy levels change continuousely over time $T$ and in some occasions two 
+energy level may be pretty near or even cross each other. If this happens to the two lowest energy levels, 
+the system will jump into the other energy level and leave the ground state. This means that long time envolution cannot guarantee
+the maximum answer to be found. These drawbacks greatly limit the performance of QAA.
+
+\section{Algorithm specification}
+
+Quantum Approximate Optimization Algorithm (QAOA) uses 
+a Trotterized approximation of QAA to obtain a quantum gate model algorithm~\cite{farhi2014quantum}.
+It separete the continuouse envolution process into countable stages and repeated apply short 
+time envolution of the Phase Operator and the Mix operator to get a state similar to the desired ground state.
+
+\subsection{Operator Definition}
+\begin{definition}[Phase operator]
+Define the Phase Operator as 
+\begin{equation}
+    U(C, \gamma)=e^{-i\gamma C}
+\end{equation} 
+\end{definition}
+where $\gamma\in [0, 2\pi]$ because $C$ is a diagonal matrix with integar elements. 
+The phase operator can be regarded as applying the Phase Hamiltonian for a short time proportion
+to $\gamma$.
+
+\begin{definition}[Mix Hamiltonian]
+Define the Mix Hamiltonian as 
+\begin{equation}
+    B=\sum_{i=1}^n\sigma_i^x
+\end{equation}
+\end{definition}
+This Hamiltonian is constructed for a convienient preparation of the initial state. 
+The ground state of this hamiltonian is simply a sum over all computational basis
+\begin{align*}
+    |s\rangle = |+\rangle^{\oplus n}=\frac{1}{\sqrt{n}}\sum_z |z\rangle
+\end{align*} 
+Therefore, this ground state for $B$ is chosen as the initial state for the envolution.
+
+\begin{definition}[Mix Operator]
+Define the Mix Operator as 
+\begin{align*}
+    U(B, \beta)=e^{-i\beta B}
+\end{align*} 
+\end{definition}
+where $\beta \in [0, \pi]$. Similar to the Phase Operator, this operator functions 
+as applying the Mix Hamiltonian for a short time proportion to $\beta$. 
+
+\subsection{Envolution}
+
+Recall the process of QAA, the long envolution time can 
+be cut into multiple small periods of time-independent envolution.
+For a small time interval $\Delta t \hbar$ at time $t$, the envolution operator 
+can be appropriated by 
+\begin{equation}
+    \begin{aligned}
+   U \approx e^{-iH(t)\Delta t} &= e^{-i(uB+vC)\Delta t} \\
+   &= \lim_{N\rightarrow \infty}(e^{-iuB\Delta t/N}e^{-ivC\Delta t/N})^N
+    \end{aligned}
+\end{equation}
+where $u=(1-\frac{t}{T}), v=\frac{t}{T}$. 
+
+Notice that the decomposited operators are just 
+in the form of Phase operator or Mix operator, which inspires us to apply these two kind of 
+operators alternatively on the initial state. For a depth $p$ and $2p$ predetermined parameters 
+$(\vec{\gamma}, \vec{\beta})$, define a quantum state.
+\begin{equation}
+    |\vec{\gamma}, \vec{\beta}\rangle=U(B,\beta_p)U(C,\gamma_p)...U(B,\beta_1)U(C,\gamma_1)|s\rangle 
+\end{equation}
+
+The expectation of eigenvalues of $C$ when we measure $|\vec{\gamma},\vec{\beta}\rangle$ in computational basis is
+\begin{align*}
+    F_p(\vec{\gamma}, \vec{\beta}) = \langle\vec{\gamma},\vec{\beta}| C |\vec{\gamma},\vec{\beta}\rangle
+\end{align*}
+
+For sufficiently large $p$ and appropriately chosen parameters, the state can envolve into the ground state
+of $C$ as discussed above. Therefore, 
+\begin{align*}
+    \lim_{p\rightarrow \infty}\max_{\vec{\gamma}, \vec{\beta}}{F_p(\vec{\gamma}, \vec{\beta})}=C_{max}(z)
+\end{align*}
+
+In reality, we cannot make $p$ as large as infinity, but an approximate solution can be obtained using this 
+state for finite $p$. To do this, repeatedly measure $|\vec{\gamma}, \vec{\beta}\rangle$ in computational basis. For each measure 
+result $\vert z \rangle$, compute $C(z)$ using traditional computers and keep the maximum number of this value as $\hat{C}(z)$. Over many 
+times of measurements, $\hat{C}(z)$ will be close to or greater than $ F_p(\vec{\gamma}, \vec{\beta})$. If we can optimize 
+the parameters for this value, then an approximate optimization solution is found.
+
+
+\section{Circuit Description}
+
+\subsection{The Phase Operator}
+
+The circuit for the Phase Operator $U(C, \gamma)$ varies over different problems and depends on the composition of $C$. 
+For MaxCut problem, $U(C, \gamma)$ can be decomposited into an unitary operator for each edge using Trotter decomposition.
+Therefore, we can design the circuit separately for every edge.
+\begin{align*}
+    U(C, \gamma) &= e^{-i\gamma\sum_{\langle jk\rangle}C_{\langle jk\rangle}}\\
+    &=\Pi_{\langle jk\rangle}e^{-i\gamma \frac{w}{2}(-\sigma_j^z\otimes\sigma_k^z+I)}\\
+    &=\Pi_{\langle jk\rangle}e^{-i\frac{-\gamma w}{2}(\sigma_j^z\otimes\sigma_k^z)}e^{-i\frac{\gamma w}{2}I}
+\end{align*}
+
+$e^{-i\frac{-\gamma w}{2}(\sigma_j^z\otimes\sigma_k^z)}$ can be implemented as a CNOT gate, a z-rotation gate and another CNOT gate. 
+while $e^{-i\frac{\gamma w}{2}I}$ is a z-rotation gate applied to $|0\rangle$.
+
+Therefore, an edge $\langle jk\rangle$this operator can be implement in circuit like FIG.\ref{fig:uc}.
+
+\begin{figure}
+\begin{quantikz}
+\lstick{$\ket{x_j}$} & \ctrl{1} & \qw                     & \ctrl{1} & \qw \\
+\lstick{$\ket{x_k}$} & \targ{}  & \gate{R_Z(-\gamma w)}   & \targ{}  & \qw \\
+\lstick{$\ket{0}$}   & \qw      & \gate{R_Z(-\gamma w/2)} & \qw      &
+\end{quantikz}
+\caption{Quantum circuit for an edge $\langle jk\rangle$ in the Phase Operator }
+\label{fig:uc}
+\end{figure}
+
+
+\subsection{The Mix Operator}
+The Mix Operator contian the sum of $\sigma_x$ operator of each qubit.
+\begin{equation}
+    U(B, \beta) = e^{-i\beta\sum\sigma_i^x}
+\end{equation}
+Therefore, the circuit is to simply add an x-rotation gate $R_{2\beta}^X$ for each qubit as FIG.\ref{fig:ub}, where
+\begin{align*}
+    R_{\phi}^X=cos(\phi/2)I_2-sin(\phi/2)i\sigma_x
+\end{align*}
+
+\begin{figure}
+\begin{quantikz}
+\lstick{$\ket{x_1}$} & \gate{R_X(2\beta)} & \qw \\
+\lstick{\vdots} \\
+\lstick{$\ket{x_n}$} & \gate{R_X(2\beta)} & \qw 
+\end{quantikz}
+\caption{Quantum circuit for the Mix Operator}
+\label{fig:ub}
+\end{figure}
+
+The overall circuit is a combination of above designs. 
+
+\section{Optimizing}
+
+A complete process for the QAOA algorithm of depth $p$ works as below:
+
+\begin{enumerate}
+    \item Choose a set of $2p$ parameters $(\vec{\gamma}, \vec{\beta})$ and use them to build the circuit
+    \item Use quantum computor to get the state $\vec{\gamma}, \vec{\beta}\rangle$
+    \item Measure the state in computational basis multiple times and record the resulting $|z\rangle$ with maximum $C(z)$ 
+    \item Adjust parameters $(\gamma, \beta)$ and repeat step 3 and 4 to get a better solution
+    \item Output the maximum result as final answer
+\end{enumerate}
+
+The performance of QAOA greatly depends on the chosen of $p$ and the parameters. Usually $p$ is limited 
+by the hardware and upstream algorithms. Therefore, how to find appropriate parameters to optimize the answer is a core problem.
+This part is usually solved using classical optimization methods based on iteration. 
+As a result, QAOA is divided to the category of hybrid quantum-classical algorithms.
+
+\subsection{Optimizing methods}
+
+The most brute force method is  to iterate over a fine grid over the $[0, 2\pi]^p \times [0, \pi]^p$
+space. Supposing each interval is divided into $k$ segments, the time complexity will be as large as 
+$O(k^{2p})$. However, the compleixty is still independent of $n$, meaning that this method can still 
+have some application in occasions with small depth.
+
+Generally, the classical optimization method can be classified into two category. 
+One is gradient-based algorithms, the most classical of which is the gradient descent. 
+In this kind of method, the way of finding the gradient at a given point also varies. These methods
+may achieve different performances in different situations. The other category is gradient-free algorithm.
+In our experiment, we chose the Bayesian Optimization as an example. Since the quantum computer 
+can be regarded as a black box for upstream algorithms, there are a great many numerical analysis methods 
+to undertake this work. As long as the search space is $[0, 2\pi]^p \times [0, \pi]^p$, the complexity 
+can remain independent of $n$. This is where quantum methods differ from traditional algorithms for Combinatorial Optimization Problem.
+
+When $p$ is relatively large, there are also some trick we can perform on the initial value of 
+$(\vec{\gamma}, \vec{\beta})$. For example, use the optimal values for smaller $p$ to interplot the parameters for larger $p$.
+Similar methods can greatly reduce the number of iterations needs for follow-up optimization~\cite{Zhou_2020}.
+
+
+\input{content/experiment.tex}
+
+\section{Conclusion}
+
+\subsection{Our Achievement}
+Quantum Approximate Optimization Algorithm is a hybrid quantum-classical algorithm for solving combinatorial optimization problems. We studied the principle and procedure of this algorithm in comparison with QAA, understood how the parameters work in this algorithm and learnt the circuit representation of each involved operator.
+
+Then we design abundant experiments and deploy it using Python. Our codes are available at  \href{https://github.com/qyy2003/QAOA}{https://github.com/qyy2003/QAOA}
+
+\begin{enumerate}
+    \item We implement unitary matrix operator simulation with two methods, eigenvalue decomposition and expm direct calculation, and fixed a precision disasters.
+    \item We deploy three methods，grid search ，Bayesian optimization and  basinhopping trick supported L-BFGS-B algorithm，to optimizate $\vec{\gamma}, \vec{\beta}$ optimization and compare their performances. It turn out that gradient-based algorithms, L-BFGS-B in particular ,have done a way better job.
+    \item We study the quantum circuits contruction theroy and implement it with qiskit SDK,which could be run on real quantum machine. And we test our quantum circuits performence both with and without noise. To better emulate the real noise, we use the data of a real IBM  Quantum Machines \textit{ibm\_nairob}. Then we analyse the influnce of noise in different circumstances.
+    \item  We study the influence of $p$ on QAOA for an given graph. Experiment results show that $F_p$ increase as $p$ grows and some fluctuation may occurs due to the limitation of optimization algorithm. Our noiseless experiments prove that
+    \begin{align*}
+    \lim_{p\rightarrow \infty}\max_{\vec{\gamma}, \vec{\beta}}{F_p(\vec{\gamma}, \vec{\beta})}=C_{max}(z)
+    \end{align*}
+    We discuss the influence of $p$ on output states both with and without noise and try some reasoning. 
+    Neither too large nor too small, suitable $p$ needs to be achieve better results, according to our experiment.
+\end{enumerate}
+
+\subsection{Outlook}
+
+\begin{itemize}
+    \item In our work, the optimizers are based on noise-free simulators. The optimized parameters are then passed to a noisy environment in quantum computers to test their performance. However, in real applications, how to optimize the parameters in a noisy environment remains a large problem to solve.
+    \item QAOA is a quantum computing method to replace classical algorithms. In our work, 
+we dug into the performance of QAOA in different depth and using various optimizers, 
+but haven't make reasonable comparison between QAOA and state-of-art classical algorithms to show 
+how quantum advantage appear in this field. This sort of work requires a wider research on 
+relative methods. 
+    \item It was shown in our work that noise can greatly reduce the algorithm's 
+performance and that the qubit we need is proportional to vertex number $n$. It remain to explore how 
+to use as little qubits as possible to obtain similar performances as well 
+as how to reduce the influence of environment noise and detect the internal error.
+\end{itemize}
+
+
+\appendix
+
+\section{Code}
+
+\lstinputlisting[title={sim.py}, language=python]{code/sim.py}
+\lstinputlisting[title={optimize.py}, language=python]{code/optimize.py}
+\lstinputlisting[title={optimize.ipynb}, language=python]{code/opt.py}
+
+
+\nocite{*}
+
+\bibliography{references}
+
+
+\end{document}
