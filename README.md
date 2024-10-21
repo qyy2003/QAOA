@@ -1,4 +1,4 @@
-# [QAOA](./Quantum_Approximate_Optimization_Algorithm_QAOA.pdf) Supporting material
+# [Quantum Approximate Optimization Algorithm(QAOA)](./Quantum_Approximate_Optimization_Algorithm_QAOA.pdf) Supporting material
 
 Group Eve: Yuyang Qin,Tingxu Ren,Ke Chen
 
